@@ -6,7 +6,6 @@ from datetime import datetime
 
 def get_session_id(cdp_server_ip, username, password):
     """Get a session id to be used in later requests for a given CDP server"""
-    
     headers = {'Content-Type': 'application/json'}
     URL = 'http://{}:/ipstor/auth/login'.format(cdp_server_ip) 
     
@@ -15,7 +14,6 @@ def get_session_id(cdp_server_ip, username, password):
     )
     r = requests.post(URL, headers=headers, data=data)
     session_id = r.cookies.get('session_id')
-
     return session_id
 
 
@@ -46,9 +44,9 @@ def get_virtual_device(cdp_server_ip, session_id):
     """Retrieve status information about all virtual devices and supporting devices."""
 
     headers = {'Content-Type': 'application/json'}
-    URL = 'http://{}:/ipstor/logicalresource/sanresource/status'.format(cdp_server_ip)
 
-    r = requests.get(URL, cookies={'session_id': session_id})
+    URL = 'http://{}:/ipstor/logicalresource/sanresource/'.format(cdp_server_ip)
+    r = requests.get(URL, cookies={'session_id': session_id}, headers=headers)
 
     return r
 
@@ -147,6 +145,7 @@ def create_vdev_thick(cdp_server_ip, session_id, name, size, qty=1, pool_id=1):
         "sizemb": size,
         "storagepoolid": pool_id
     })
+
     r = requests.post(URL, cookies={'session_id': session_id}, data=data, headers=headers)
 
     return r
