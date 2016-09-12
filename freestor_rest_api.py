@@ -42,11 +42,21 @@ def get_adapter_info(cdp_server_ip, session_id):
 
 def get_virtual_device(cdp_server_ip, session_id):
     """Retrieve status information about all virtual devices and supporting devices."""
-
+    
     headers = {'Content-Type': 'application/json'}
-
     URL = 'http://{}:/ipstor/logicalresource/sanresource/'.format(cdp_server_ip)
     r = requests.get(URL, cookies={'session_id': session_id}, headers=headers)
+    
+    return r
+
+    
+def get_virtual_device_details(cdp_server_ip, session_id, vdev):
+    """Retrieves information about the specified virtualized device."""
+
+    headers = {'Content-Type': 'application/json'}
+    URL = 'http://{}:/ipstor/logicalresource/sanresource/{}'.format(cdp_server_ip, vdev)
+
+    r = requests.get(URL, cookies={'session_id': session_id})
 
     return r
 
