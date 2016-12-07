@@ -79,7 +79,7 @@ def get_target_fc_ports(cdp_server_ip, session_id):
         r = requests.get(URL, cookies={'session_id': session_id})
         portstatus = r.json()['data'].get('portstatus')
 
-        adapters.append(",".join([server, str(adapter), wwpn, mode]))
+        adapters.append(",".join([server, str(adapter), wwpn, mode, portstatus]))
 
     return adapters
 
