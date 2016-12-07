@@ -40,6 +40,50 @@ def get_adapter_info(cdp_server_ip, session_id):
     return data
 
 
+def get_initiator_fc_ports(cdp_server_ip, session_id):
+    """Retrieves the list of INITIATOR WWPNs of Fibre Channel target ports of all physical adapters"""
+
+    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/fcwwpn'.format(server)
+    mode = 'initiator'
+    adapters = []
+    r = requests.get(URL, cookies={'session_id': session_id})
+    data = r.json().get('data')
+    for fc in data:
+        adapter = fc.get('adapter')
+        wwpn = fc.get('wwpn')
+
+        # Get fiber channel port status (link up / link down)
+        URL = 'http://{}:/ipstor/physicalresource/physicaladapter/{}/'.format(cdp_server_ip, adapter)
+        r = requests.get(URL, cookies={'session_id': session_id})
+        portstatus = r.json()['data'].get('portstatus')
+
+        adapters.append(",".join([server, str(adapter), wwpn, mode, portstatus]))
+
+    return adapters
+
+
+def get_target_fc_ports(cdp_server_ip, session_id):
+    """Retrieves the list of TARGET WWPNs of Fibre Channel target ports of all physical adapters"""
+
+    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/fctgtwwpn'.format(server) 
+    mode = 'target'
+    adapters = []
+    r = requests.get(URL, cookies={'session_id': session_id})
+    data = r.json().get('data')
+    for fc in data:
+        adapter = fc.get('adapter')
+        wwpn = fc.get('aliaswwpn')
+
+        # Get fiber channel port status (link up / link down)
+        URL = 'http://{}:/ipstor/physicalresource/physicaladapter/{}/'.format(cdp_server_ip, adapter)
+        r = requests.get(URL, cookies={'session_id': session_id})
+        portstatus = r.json()['data'].get('portstatus')
+
+        adapters.append(",".join([server, str(adapter), wwpn, mode]))
+
+    return adapters
+
+
 def get_virtual_device(cdp_server_ip, session_id):
     """Retrieve status information about all virtual devices and supporting devices."""
     
