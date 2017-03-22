@@ -43,7 +43,7 @@ def get_adapter_info(cdp_server_ip, session_id):
 def get_initiator_fc_ports(cdp_server_ip, session_id):
     """Retrieves the list of INITIATOR WWPNs of Fibre Channel target ports of all physical adapters"""
 
-    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/fcwwpn'.format(server)
+    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/fcwwpn'.format(cdp_server_ip)
     mode = 'initiator'
     adapters = []
     r = requests.get(URL, cookies={'session_id': session_id})
@@ -57,7 +57,7 @@ def get_initiator_fc_ports(cdp_server_ip, session_id):
         r = requests.get(URL, cookies={'session_id': session_id})
         portstatus = r.json()['data'].get('portstatus')
 
-        adapters.append(",".join([server, str(adapter), wwpn, mode, portstatus]))
+        adapters.append(",".join([cdp_server_ip, str(adapter), wwpn, mode, portstatus]))
 
     return adapters
 
@@ -65,7 +65,7 @@ def get_initiator_fc_ports(cdp_server_ip, session_id):
 def get_target_fc_ports(cdp_server_ip, session_id):
     """Retrieves the list of TARGET WWPNs of Fibre Channel target ports of all physical adapters"""
 
-    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/fctgtwwpn'.format(server) 
+    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/fctgtwwpn'.format(cdp_server_ip)
     mode = 'target'
     adapters = []
     r = requests.get(URL, cookies={'session_id': session_id})
@@ -79,7 +79,7 @@ def get_target_fc_ports(cdp_server_ip, session_id):
         r = requests.get(URL, cookies={'session_id': session_id})
         portstatus = r.json()['data'].get('portstatus')
 
-        adapters.append(",".join([server, str(adapter), wwpn, mode, portstatus]))
+        adapters.append(",".join([cdp_server_ip, str(adapter), wwpn, mode, portstatus]))
 
     return adapters
 
