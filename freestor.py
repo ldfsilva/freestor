@@ -1,43 +1,157 @@
-#!/usr/bin/python3
 import requests
 import json
 from datetime import datetime
 
 
-def get_session_id(cdp_server_ip, username, password):
-    """Get a session id to be used in later requests for a given CDP server"""
+def get_session_id(server, username, password):
+    """Get a session id to be used in later requests"""
+
     headers = {'Content-Type': 'application/json'}
-    URL = 'http://{}:/ipstor/auth/login'.format(cdp_server_ip) 
-    
     data = '{}"server": "{}", "username": "{}", "password": "{}"{}'.format(
-        '{', cdp_server_ip, username, password, '}'
+        '{', server, username, password, '}'
     )
+
+    URL = 'http://{}:/ipstor/auth/login'.format(server)
     r = requests.post(URL, headers=headers, data=data)
-    session_id = r.cookies.get('session_id')
+    r_json = r.json()
+
+    status_code = r_json.get('rc')
+    #If request is not successful it must through its return code
+    if status_code != 0:
+        exit(status_code)
+
+    session_id = r_json.get('id')
+
     return session_id
 
 
-def get_adapter_info(cdp_server_ip, session_id):
-    """Collect Fiber Channel adapter information for a given CDP server"""
+def get_fc_adapters(server, session_id):
+    """
+    Query the server and return a list of all fiber channel adapter IDs.
 
+    For example:
+    [100, 101, 102, 103]
+    """
+
+    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/'.format(server)
+    r = requests.get(URL, cookies={'session_id': session_id})
+    r_json = r.json()
+
+    status_code = r_json.get('rc')
+    #If request is not successful it must through its return code
+    if status_code != 0:
+        exit(status_code)
+
+    #Get information about physical adapters
+    data = r_json.get('data').get('physicaladapters')
+    #Iterate through each device and return only id for the fc ones
+    hbas = [hba.get('id') for hba in data if hba.get('type') == 'fc']
+
+    return hbas
+
+
+def get_fc_detail(server, session_id, fca):
+    """
+    Get detail for a given fiber channel adapter.
+
+    If the adapter is set to to either initiator or target mode,
+    it shall return a single result containing its relevant data.
+    For example:
+
+    [
+        ['FC Adapter 100', 'QLogic', 'initiator',
+        'linkdown', '21-00-00-e0-8b-94-30-05', 'initiator'],
+    ]
+
+    In case the adapter is set to dual mode it shall return
+    two results, being one for the initiator wwpn and the other
+    for the target one.
+    For example:
+
+    [
+        ['FC Adapter 101', 'QLogic', 'dual',
+        'linkdown', '21-01-00-e0-8b-b4-30-05', 'initiator'],
+        ['FC Adapter 101', 'QLogic', 'dual',
+        'linkdown', '21-01-00-0d-77-b4-30-05', 'target']
+    ]
+    """
+
+    URL = 'http://{}:/ipstor/physicalresource/physicaladapter/{}/'.format(
+            server, fca
+    )
+    r = requests.get(URL, cookies={'session_id': session_id})
+    r_json = r.json()
+
+    status_code = r_json.get('rc')
+    #If request is not successful it must through its return code
+    if status_code != 0:
+        exit(status_code)
+
+    #Replaces - (hyphen) wwpn separator for : (column)
+    fix_wwpn = lambda wwpn: wwpn.replace('-', ':')
+
+    #Get information about physical adapters
+    data = r_json.get('data')
+    mode = data.get('mode')
+    name = data.get('name')
+    vendor = data.get('vendor')
+    portstatus = data.get('portstatus')
+    wwpn = data.get('wwpn')
+    wwpn = fix_wwpn(wwpn)
+
+    #If fc adapter is set to dual mode we need to get the target wwpn
+    if mode == "dual":
+        aliaswwpn = data.get('aliaswwpn')[0].get('name')
+        aliaswwpn = fix_wwpn(aliaswwpn)
+
+        fc_detail = [
+            [name, vendor, mode, portstatus, wwpn, 'initiator'],
+            [name, vendor, mode, portstatus, aliaswwpn, 'target']
+        ]
+    #if fc adapter is not set to dual mode, mode value will be either
+    #initiator or target that's why it's repeated on the list
+    else:
+        fc_detail = [
+            [name, vendor, mode, portstatus, wwpn, mode],
+        ]
+
+    return fc_detail
+
+
+def get_fc_detail_all(server, session_id):
+    """
+    Get detail for all fiber channel adapters and dump it on a csv file.
+
+    It uses get_fc_adapters in order to get a list of all fc adapters
+    available on the server and then iterate through each one of them
+    executing get_fc_detail in order to gather the required information.
+    """
+
+    #Prepare output file
     d = datetime.now()
-    date = d.strftime("%Y%m%d %X")    
-    data = ['date, server, adapter, vendor, wwpn, status, mode']
+    date = d.strftime("%Y%m%d_%H%M%S")
+    f_name = 'fc_adapters_info_{}.csv'.format(date)
+    header = ('server,adapter,vendor,fc mode,status,wwpn,wwpn mode\n')
 
-    for fca in range(100, 108):
-        URL = 'http://{}:/ipstor/physicalresource/physicaladapter/{}/'.format(cdp_server_ip, fca)
-        r = requests.get(URL, cookies={'session_id': session_id})
-        adapter = r.json()
-        name = adapter['data'].get('name')
-        vendor = adapter['data'].get('vendor')
-        bioswwpn = adapter['data'].get('bioswwpn')
-        portstatus = adapter['data'].get('portstatus')
-        mode = adapter['data'].get('mode')
-        data.append('{},{},{},{},{},{},{}'.format(
-            date, cdp_server_ip, name, vendor, bioswwpn, portstatus, mode)
-        )
+    #Query server for adapter detail
+    adapters = get_fc_adapters(server, session_id)
+    adapters_detail = []
+    for fca in adapters:
+        fca_detail = get_fc_detail(server, session_id, fca)
+        adapters_detail.append(fca_detail)
 
-    return data
+    with open(f_name, 'w') as fp:
+        fp.write(header)
+        for fc in adapters_detail:
+            for line in fc:
+                fp.write(server + ',')
+                fp.write(','.join(line))
+                fp.write('\n')
+
+    message = "Adapters detail saved at: {}".format(f_name)
+
+    print(message)
+    return 1
 
 
 def get_initiator_fc_ports(cdp_server_ip, session_id):
