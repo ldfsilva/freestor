@@ -1,0 +1,23 @@
+{
+    "rc": 0,
+    "data": {
+        "name": "FC Adapter 101",
+        "vendor": "QLogic",
+        "mode": "dual",
+        "wwpn": "21-01-00-e0-8b-b4-30-05",
+        "portstatus": "linkdown",
+        "bioswwpn": "21-01-00-e0-8b-b4-30-05",
+        "spoofwwpn": "",
+        "monitorwwpn": "",
+        "standbywwpn": "",
+        "type": "fc",
+        "aliaswwpn": [
+            {
+                "name": "21-01-00-0d-77-b4-30-05"
+            }
+        ],
+        "sns": [],
+        "persistentbinding": [],
+        "physicaldevices": []
+    }
+}

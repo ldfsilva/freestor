@@ -1,0 +1,50 @@
+{
+    "rc": 0,
+    "data": {
+        "total": 6,
+        "physicaladapters": [
+            {
+                "vendor": "MegaRAID",
+                "id": 0,
+                "mode": "",
+                "type": "scsi",
+                "wwpn": ""
+            },
+            {
+                "vendor": "FalconStor",
+                "id": 98,
+                "mode": "",
+                "type": "block",
+                "wwpn": ""
+            },
+            {
+                "vendor": "QLogic",
+                "id": 100,
+                "mode": "initiator",
+                "type": "fc",
+                "wwpn": "21-00-00-e0-8b-94-30-05"
+            },
+            {
+                "vendor": "QLogic",
+                "id": 101,
+                "mode": "dual",
+                "type": "fc",
+                "wwpn": "21-02-00-e0-8b-b4-30-05"
+            },
+            {
+                "vendor": "QLogic",
+                "id": 102,
+                "mode": "initiator",
+                "type": "fc",
+                "wwpn": "21-00-00-1b-32-1f-05-45"
+            },
+            {
+                "vendor": "QLogic",
+                "id": 103,
+                "mode": "dual",
+                "type": "fc",
+                "wwpn": "21-01-00-1b-32-3f-05-45"
+            }
+        ]
+    }
+}
