@@ -319,6 +319,32 @@ def create_vdev_thick(cdp_server_ip, session_id, name, size, qty=1, pool_id=1):
     return r
 
 
+def create_fc_sanclient(server, session_id, name, os_type,
+                        initiators_wwpn):
+    """Create fiber channel SAN client"""
+
+    headers = {'Content-Type': 'application/json'}
+    URL = 'http://{}:/ipstor/client/sanclient/'.format(server)
+    data = json.dumps({
+        "name": name,
+        "protocoltype": ['fc'],
+        "ostype": os_type,
+        "persistentreservation": True,
+        "clustered": True,
+        "fcpolicy": {
+            "initiators": [initiators_wwpn,],
+            "vsaenabled": False
+        }
+    })
+
+    r = requests.post(URL, cookies={'session_id': session_id}, data=data, headers=headers)
+    r_json = r.json()
+
+    status_code = r_json.get('rc')
+
+    return r
+
+
 def rescan_adapters(cdp_server_ip, session_id):
     """Rescan physical resources to refresh the list of devices. SCSI Inquiry String \
         commands are sent to physical adapter ports to get the list of devices"""
