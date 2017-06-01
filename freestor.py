@@ -345,6 +345,30 @@ def create_fc_sanclient(server, session_id, name, os_type,
     return r
 
 
+def format_wwpn(wwpn, delimiter='-'):
+    """Formats a WWPN with the given delimiter"""
+
+    # a non formated WWPN has 16 characters
+    if len(wwpn) == 16:
+        wwpn = delimiter.join([ wwpn[idx-2:idx] for idx in range(2, 17,2)])
+
+    return wwpn
+
+
+def create_multiple_san_clients(server, session_id, san_clients, os_type='aix'):
+    """Create multiple SAN clients
+
+
+    Given a list containing multiple aliases names and wwpn information
+    ["alias_name", "wwpn"]"""
+
+    for san_client in san_clients:
+        name = san_client[0]
+        wwpn = format_wwpn(san_client[1])
+
+        create_fc_sanclient(server, session_id, name, os_type, wwpn)
+
+
 def rescan_adapters(cdp_server_ip, session_id):
     """Rescan physical resources to refresh the list of devices. SCSI Inquiry String \
         commands are sent to physical adapter ports to get the list of devices"""
