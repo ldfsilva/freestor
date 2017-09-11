@@ -3,7 +3,7 @@ from setuptools import setup
 import os
 
 
-README = os.path.join(os.path.dirname(__file__), 'README.md')
+README = os.path.join(os.path.dirname(__file__), 'README.rst')
 REQUIREMENTS = os.path.join(os.path.dirname(__file__), 'requirements.txt')
 
 
