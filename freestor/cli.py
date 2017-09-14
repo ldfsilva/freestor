@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--username', '-u', help='Username', required=True)
     parser.add_argument('--password', '-p', help='Password')
 
-    parser.add_argument('--physical-devices', action='store_true', help='List all physical disk devices information')
+    parser.add_argument('--get-pdevs', action='store_true', help='Get all physical disk devices information')
 
     args = parser.parse_args()
 
@@ -25,7 +25,7 @@ def main():
 
     assert freestor.get_session_id()
 
-    if args.physical_devices:
-        data = freestor.get_physical_devices()
+    if args.get_pdevs:
+        data = freestor.get_pdevs()
         print()
         print(data)

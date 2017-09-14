@@ -255,36 +255,49 @@ class FreeStor:
         return r
 
     def get_physical_devices(self):
-        """Get physical devices information for a given CDP server"""
-        
-        URL = 'http://{}:/ipstor/physicalresource/physicaldevice/'.format(self.server)
-        d = datetime.now()
-        date = d.strftime("%Y%m%d %X")
-        data = ['date, server, cdp lun id, acsl, vendor, product, \
-            lun name, wwid, category, lun size (bytes), total used (bytes), status']
+        """Get physical devices information"""
+
+        URL = 'http://%s:/ipstor/physicalresource/physicaldevice/' % self.server
 
         r = requests.get(URL, cookies={'session_id': self.session_id})
-        devices = r.json()['data'].get('physicaldevices')
 
-        for device in devices:
-            id = device.get('id')
-            acsl = device.get('acsl')
-            r = requests.get(URL + id, cookies={'session_id': self.session_id})
-            device_detail = r.json()['data']
-            owner = device_detail.get('owner')
-            vendor = device_detail.get('vendor')
-            product = device_detail.get('product')
-            name = device_detail.get('name')
-            wwid = device_detail.get('wwid')
-            category = device_detail.get('category')
-            size = device_detail.get('size')
-            used = device_detail.get('used')
-            status = device_detail.get('status')        
-            data.append('{},{},{},{},{},{},{},{},{},{},{},{}'.format(
-                date, self.server, id, acsl, vendor, product, name, 
-                wwid, category, size, used, status
+        # extract physical device data out of the response
+        data = r.json()['data'].get('physicaldevices')
 
-            ))
+        return data
+
+    def get_physical_device_detail(self, guid):
+        """Get additional detail of the given physical device"""
+
+        URL = 'http://%s:/ipstor/physicalresource/physicaldevice/%s/' % (self.server, guid)
+
+        r = requests.get(URL, cookies={'session_id': self.session_id})
+
+        data = r.json()['data']
+
+        return data
+
+    def get_pdevs(self):
+        """Gather all physical devices information"""
+
+        d = datetime.now()
+        date = d.strftime("%Y%m%d_%X")
+
+        data = []
+        all_devices = self.get_physical_devices()
+        for device in all_devices:
+            guid = device.get('id')
+
+            device_detail = self.get_physical_device_detail(guid)
+
+            # Merge device and device_detail dictionaries in order to have a single
+            # dictionary with all information for the given physical device.
+            # There are 6 duplicate keys which contains same value and overlap on them,
+            # they are: name, category, isforeign, size, used and status
+            #
+            # Also add date to enable historical comparison on outputed data
+            #
+            data.append({**{'date': date}, **device, **device_detail})
 
         return data
 
