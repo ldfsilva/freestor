@@ -330,6 +330,50 @@ class FreeStor:
 
         return data
 
+    def enumerate_licenses(self):
+        """Get license information"""
+
+        URL = 'http://%s:/ipstor/server/license/' % self.server
+
+        r = requests.get(URL, cookies={'session_id': self.session_id})
+
+        data = r.json()['data'].get('licenseinfo')
+
+        return data
+
+    def get_license_detail(self, key):
+        """Get additional license details"""
+
+        URL = 'http://%s:/ipstor/server/license/%s/' % (self.server, key)
+
+        r = requests.get(URL, cookies={'session_id': self.session_id})
+
+        data = r.json()['data']
+
+        return data
+
+    def get_licenses(self):
+        """Gather all licenses information"""
+
+        d = datetime.now()
+        date = d.strftime("%Y%m%d_%X")
+
+        data = []
+        licenses = self.enumerate_licenses()
+        for license in licenses:
+            key = license.get('key')
+
+            license_detail = self.get_license_detail(key)
+
+            # Merge license and license_detail dictionaries in order to have
+            # a single dictionary with all license information.
+            #
+            # Also add date to enable historical comparison on outputed data
+            #
+            data.append({**{'date': date}, **license, **license_detail})
+
+        return data
+
     def create_vdev_thin(self, name, size, qty=1, pool_id=1):
         """Create virtual devices in a storagepool already created (Thin provision)"""
 
