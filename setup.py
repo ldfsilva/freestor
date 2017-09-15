@@ -9,7 +9,7 @@ REQUIREMENTS = os.path.join(os.path.dirname(__file__), 'requirements.txt')
 
 if __name__ == "__main__":
     setup(name='freestor',
-          version='0.2',
+          version='0.3',
           description='A python library to interact with FalconStor FreeStor REST API',
           long_description=open(README).read(),
           author='Leandro Silva', author_email='ldfsilva@gmail.com',
@@ -32,8 +32,6 @@ if __name__ == "__main__":
               'Intended Audience :: Developers',
               'Intended Audience :: System Administrators',
               'Natural Language :: English',
-              'Programming Language :: Python :: 2.6',
-              'Programming Language :: Python :: 2.7',
               'Programming Language :: Python :: 3.5',
               'Programming Language :: Python :: 3.6',
               'Programming Language :: Python :: 3.7',
