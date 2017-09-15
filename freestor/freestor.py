@@ -39,9 +39,9 @@ class FreeStor:
         if status_code != 0:
             exit(status_code)
 
-        session_id = r_json.get('id')
+        self.session_id = r_json.get('id')
 
-        return session_id
+        return self.session_id
 
     def get_fc_adapters(self):
         """
@@ -215,20 +215,49 @@ class FreeStor:
         """Retrieve status information about all virtual devices and supporting devices."""
         
         headers = {'Content-Type': 'application/json'}
-        URL = 'http://{}:/ipstor/logicalresource/sanresource/'.format(self.server)
+        URL = 'http://%s:/ipstor/logicalresource/sanresource/' % self.server
         r = requests.get(URL, cookies={'session_id': self.session_id}, headers=headers)
         
-        return r
+        # extract virtual device data out of the response
+        data = r.json()['data'].get('virtualdevices')
+
+        return data
     
     def get_virtual_device_details(self, vdev):
         """Retrieves information about the specified virtualized device."""
 
         headers = {'Content-Type': 'application/json'}
-        URL = 'http://{}:/ipstor/logicalresource/sanresource/{}'.format(self.server, vdev)
+        URL = 'http://%s:/ipstor/logicalresource/sanresource/%s/' % (self.server, vdev)
 
         r = requests.get(URL, cookies={'session_id': self.session_id})
 
-        return r
+        data = r.json()['data']
+
+        return data
+
+    def get_vdevs(self):
+        """Gather all virtual devices information"""
+
+        d = datetime.now()
+        date = d.strftime("%Y%m%d_%X")
+
+        data = []
+        all_devices = self.get_virtual_device()
+        for device in all_devices:
+            guid = device.get('id')
+
+            device_detail = self.get_virtual_device_details(guid)
+
+            # Merge device and device_detail dictionaries in order to have a single
+            # dictionary with all information for the given physical device.
+            # There are 6 duplicate keys which contains same value and overlap on them,
+            # they are: name, category, isforeign, size, used and status
+            #
+            # Also add date to enable historical comparison on outputed data
+            #
+            data.append({**{'date': date}, **device, **device_detail})
+
+        return data
 
     def get_badwidth(self, server_t):
         """Test the network bandwidth with a replica server."""
