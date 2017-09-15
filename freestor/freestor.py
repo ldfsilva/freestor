@@ -273,15 +273,71 @@ class FreeStor:
 
         return r
 
-    def get_replication_status(self, vdev):
-        """Returns incoming replication status for a replica device"""
+    def get_incoming_replication_servers(self):
+        """Get the list of source servers for incoming replication."""
 
-        headers = {'Content-Type': 'application/json'}
-        URL = 'http://{}:/ipstor/logicalresource/replication/incoming/{}'.format(self.server, vdev)
+        URL = 'http://%s/ipstor/logicalresource/replication/incoming/' % self.server
 
         r = requests.get(URL, cookies={'session_id': self.session_id})
 
-        return r
+        data = r.json()['data']
+
+        return data
+
+    def get_outgoing_replication_servers(self):
+        """Get the list of replica servers for outgoing replication."""
+
+        URL = 'http://%s/ipstor/logicalresource/replication/outgoing/' % self.server
+
+        r = requests.get(URL, cookies={'session_id': self.session_id})
+
+        data = r.json()['data']
+
+        return data
+
+    def get_incoming_replication_status(self, vdev):
+        """Returns incoming replication status for a replica device."""
+
+        URL = 'http://%s/ipstor/logicalresource/replication/incoming/%s/' % (self.server, vdev)
+
+        r = requests.get(URL, cookies={'session_id': self.session_id})
+
+        data = r.json()['data']
+
+        return data
+
+    def get_replication_detail(self, vdev):
+        """Returns replication information for a virtual device."""
+
+        URL = 'http://%s/ipstor/logicalresource/replication/%s/' % (self.server, vdev)
+
+        r = requests.get(URL, cookies={'session_id': self.session_id})
+
+        data = r.json()['data']
+
+        return data
+
+    def get_replication_status(self):
+        """Returns incoming replication status for a replica device"""
+
+        d = datetime.now()
+        date = d.strftime("%Y%m%d_%X")
+
+        outgoing_rep = self.get_outgoing_replication_servers()
+
+        data = []
+        # for device in incoming_rep[0].get('devices'):
+        for device in outgoing_rep[0].get('devices'):
+
+            device_detail = self.get_replication_detail(device)
+
+            # Also add date to enable historical comparison on outputed data
+            #
+            device_detail.update({'date': date})
+
+            data.append(device_detail)
+
+        return data
 
     def get_physical_devices(self):
         """Get physical devices information"""

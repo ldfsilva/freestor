@@ -36,6 +36,8 @@ def f_csv(data, caller):
         ]
     elif caller == 'licenses':
         header = ['date', 'key', 'type', 'registration', 'asciikeycode', 'info']
+    elif caller == 'replication':
+        header = ['date','guid', 'name','replicationpolicy']
 
     writer = csv.DictWriter(output, fieldnames=header)
     writer.writeheader()
@@ -62,6 +64,7 @@ def main():
     parser.add_argument('--get-pdevs', action='store_true', help='Get all physical disk devices information')
     parser.add_argument('--get-vdevs', action='store_true', help='Get all virtual disk devices information')
     parser.add_argument('--get-licenses', action='store_true', help='Get all licenses information')
+    parser.add_argument('--get-replication-status', action='store_true', help='Get replication status for all devices')
 
     parser.add_argument('--json', help='Output data in JSON format, default is CSV.', action='store_const', dest='output', const=f_json, default=f_csv)
 
@@ -85,3 +88,7 @@ def main():
     if args.get_licenses:
         data = freestor.get_licenses()
         output(data, 'licenses')
+
+    if args.get_replication_status:
+        data = freestor.get_replication_status()
+        output(data, 'replication')
