@@ -9,11 +9,14 @@ from getpass import getpass
 from freestor import FreeStor
 
 
-def f_csv(data, caller):
+def f_csv(data, caller, filename=None):
     """Output data in CSV format"""
 
-    # output data to standard output
-    output = sys.stdout
+    if filename:
+        output = open(filename, 'w')
+    else:
+        # output data to standard output
+        output = sys.stdout
 
     # define header for each function, fields based on REST API documentation
     # fields will vary for each type of device
@@ -45,11 +48,17 @@ def f_csv(data, caller):
         writer = csv.DictWriter(output, fieldnames=header)
         writer.writerow(device)
 
+    output.close()
 
-def f_json(data, caller):
+
+def f_json(data, caller, filename=None):
     """Output data in JSON format"""
 
-    print(json.dumps(data, indent=4))
+    if filename:
+        with open(filename, 'w') as fp:
+            json.dump(data, fp)
+    else:
+        print(json.dumps(data, indent=4))
 
 
 def main():
@@ -67,10 +76,12 @@ def main():
     parser.add_argument('--get-replication-status', action='store_true', help='Get replication status for all devices')
 
     parser.add_argument('--json', help='Output data in JSON format, default is CSV.', action='store_const', dest='output', const=f_json, default=f_csv)
+    parser.add_argument('--filename', help='Writes output to the specified filename.')
 
     args = parser.parse_args()
 
     output = args.output
+    filename = args.filename
     password = args.password or getpass("Provide %s's password: " % args.username)
 
     freestor = FreeStor(args.server, args.username, password)
@@ -79,16 +90,16 @@ def main():
 
     if args.get_pdevs:
         data = freestor.get_pdevs()
-        output(data, 'pdevs')
+        output(data, 'pdevs', filename)
 
     if args.get_vdevs:
         data = freestor.get_vdevs()
-        output(data, 'vdevs')
+        output(data, 'vdevs', filename)
 
     if args.get_licenses:
         data = freestor.get_licenses()
-        output(data, 'licenses')
+        output(data, 'licenses', filename)
 
     if args.get_replication_status:
         data = freestor.get_replication_status()
-        output(data, 'replication')
+        output(data, 'replication', filename)
