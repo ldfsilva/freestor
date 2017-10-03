@@ -1,0 +1,33 @@
+{
+    "rc": 0,
+    "data": {
+        "total": 5,
+        "licenseinfo": [
+                {
+                    "key": "XXXXXXXXXXXXXXXXXXXXXXXXA",
+                    "registration": 0,
+                    "type": "Standard license for NSS, High Availability, HotZone, SafeCache, Service Enabled Disk, Zero-Impact Backup Enabler"
+                },
+                {
+                    "key": "XXXXXXXXXXXXXXXXXXXXXXXXB",
+                    "registration": 0,
+                    "type": "Standard license for NSS, Base (8 iSCSI ports, Unlimited Client Connections, 256 Snapshot, Email Alerts, Mirroring, Replication, iSCSI Boot, Multi-pathing), 8 FC Ports, Unlimited TimeMarks and Snapshot Copy"
+                },
+                {
+                    "key": "XXXXXXXXXXXXXXXXXXXXXXXXC",
+                    "registration": 0,
+                    "type": "Standard license for NSS, 5 TB storage capacity"
+                },
+                {
+                    "key": "XXXXXXXXXXXXXXXXXXXXXXXXD",
+                    "registration": 0,
+                    "type": "Standard license for NSS, 5 TB storage capacity"
+                },
+                {
+                    "key": "XXXXXXXXXXXXXXXXXXXXXXXXE",
+                    "registration": 0,
+                    "type": "Standard license for NSS, 5 TB storage capacity"
+                }
+        ]
+    }
+}

@@ -95,3 +95,120 @@ class TestFreestor(unittest.TestCase):
         adapter = self.cdp.get_fc_detail(101)
 
         self.assertListEqual(expected, adapter)
+
+    @patch('freestor.FreeStor._get')
+    def test_enumerate_licenses_ok(self, mock_get):
+        """
+        When successfull a list of registered licenses is returned.
+        """
+
+        expected = [
+            {
+                "key": "XXXXXXXXXXXXXXXXXXXXXXXXA",
+                "registration": 0,
+                "type": "Standard license for NSS, High Availability, HotZone, SafeCache, \
+Service Enabled Disk, Zero-Impact Backup Enabler"
+            },
+            {
+                "key": "XXXXXXXXXXXXXXXXXXXXXXXXB",
+                "registration": 0,
+                "type": "Standard license for NSS, Base (8 iSCSI ports, Unlimited Client \
+Connections, 256 Snapshot, Email Alerts, Mirroring, Replication, iSCSI Boot, Multi-pathing), \
+8 FC Ports, Unlimited TimeMarks and Snapshot Copy"
+            },
+            {
+                "key": "XXXXXXXXXXXXXXXXXXXXXXXXC",
+                "registration": 0,
+                "type": "Standard license for NSS, 5 TB storage capacity"
+            },
+            {
+                "key": "XXXXXXXXXXXXXXXXXXXXXXXXD",
+                "registration": 0,
+                "type": "Standard license for NSS, 5 TB storage capacity"
+            },
+            {
+                "key": "XXXXXXXXXXXXXXXXXXXXXXXXE",
+                "registration": 0,
+                "type": "Standard license for NSS, 5 TB storage capacity"
+            }
+        ]
+
+        mock_get.return_value = load_json('tests/licenses.json')
+        licenses = self.cdp.enumerate_licenses()
+
+        self.assertListEqual(expected, licenses)
+
+    @patch('freestor.FreeStor._get')
+    def test_get_license_detail_ok(self, mock_get):
+        """
+        When successfull a dictionary with additional data is returned for the given license key.
+        """
+
+        expected = {
+            "asciikeycode": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "info": "BBBBBBBBBBBB"
+        }
+
+        mock_get.return_value = load_json('tests/license_detail.json')
+        license_detail = self.cdp.get_license_detail('XXXXXXXXXXXXXXXXXXXXXXXXA')
+
+        self.assertDictEqual(expected, license_detail)
+
+    @patch('freestor.freestor.datetime')
+    @patch('freestor.FreeStor.get_license_detail')
+    @patch('freestor.FreeStor.enumerate_licenses')
+    def test_get_licenses_ok(self, mock_enumerate, mock_license, mock_date):
+        """
+        When successfull a dictionary containing all registered licenses is returned.
+        get_licenes perform a merge of enumerate_licenses and license_detail returning
+        a list of dictionaries containing all information of registered licenses.
+        """
+
+        from datetime import datetime
+
+        expected = [
+            {'date': '20171003_16:23:59',
+            "key": "XXXXXXXXXXXXXXXXXXXXXXXXA",
+            "registration": 0,
+            "type": "Standard license for NSS, High Availability, HotZone, SafeCache, \
+Service Enabled Disk, Zero-Impact Backup Enabler",
+            "asciikeycode": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "info": "BBBBBBBBBBBB"},
+            {'date': '20171003_16:23:59',
+            "key": "XXXXXXXXXXXXXXXXXXXXXXXXB",
+            "registration": 0,
+            "type": "Standard license for NSS, Base (8 iSCSI ports, Unlimited Client \
+Connections, 256 Snapshot, Email Alerts, Mirroring, Replication, iSCSI Boot, \
+Multi-pathing), 8 FC Ports, Unlimited TimeMarks and Snapshot Copy",
+            "asciikeycode": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB",
+            "info": "BBBBBBBBBBBB"}
+        ]
+
+        licenses = [
+            {"key": "XXXXXXXXXXXXXXXXXXXXXXXXA",
+            "registration": 0,
+            "type": "Standard license for NSS, High Availability, HotZone, SafeCache, \
+Service Enabled Disk, Zero-Impact Backup Enabler"},
+            {"key": "XXXXXXXXXXXXXXXXXXXXXXXXB",
+            "registration": 0,
+            "type": "Standard license for NSS, Base (8 iSCSI ports, Unlimited Client \
+Connections, 256 Snapshot, Email Alerts, Mirroring, Replication, iSCSI Boot, \
+Multi-pathing), 8 FC Ports, Unlimited TimeMarks and Snapshot Copy"}
+        ]
+
+        # Detail information for two licenses to be used on side_effect. As there are
+        # two licenses it will run get_license_detail two times. That's why side_effect
+        # is being used.
+        licenses_detail = [
+            {"asciikeycode": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "info": "BBBBBBBBBBBB"},
+            {"asciikeycode": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB",
+            "info": "BBBBBBBBBBBB"}
+        ]
+
+        mock_date.now.return_value = datetime(2017, 10, 3, 16, 23, 59)
+        mock_enumerate.return_value = licenses
+        mock_license.side_effect = licenses_detail
+        licenses = self.cdp.get_licenses()
+
+        self.assertListEqual(expected, licenses)
