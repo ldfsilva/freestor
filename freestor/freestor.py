@@ -19,11 +19,35 @@ class FreeStor:
         self.server = server
         self.username = username
         self.password = password
-        self.headers = {'Content-Type': 'application/json'} 
+        self.headers = {'Content-Type': 'application/json'}
         self.session_id = self.get_session_id()
 
     def _url(self, path):
         return 'http://%s:/ipstor/%s' % (self.server, path)
+
+    def _get(self, url):
+        import sys
+
+        try:
+            r = requests.get(url, cookies={'session_id': self.session_id})
+            r.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(e)
+            sys.exit(1)
+
+        return r.json()
+
+    def _post(self, url, data):
+        import sys
+
+        try:
+            r = requests.post(url, headers=self.headers, data=data)
+            r.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(e)
+            sys.exit(1)
+
+        return r.json()
 
     def get_session_id(self):
         """Get a session id to be used in later requests"""
@@ -33,15 +57,9 @@ class FreeStor:
         )
 
         URL = self._url('auth/login')
-        r = requests.post(URL, headers=self.headers, data=data)
-        r_json = r.json()
+        r = self._post(URL, data)
 
-        status_code = r_json.get('rc')
-        #If request is not successful it must through its return code
-        if status_code != 0:
-            exit(status_code)
-
-        self.session_id = r_json.get('id')
+        self.session_id = r.get('id')
 
         return self.session_id
 
@@ -54,16 +72,10 @@ class FreeStor:
         """
 
         URL = self._url('physicalresource/physicaladapter/')
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-        r_json = r.json()
-
-        status_code = r_json.get('rc')
-        #If request is not successful it must through its return code
-        if status_code != 0:
-            exit(status_code)
+        r = self._get(URL)
 
         #Get information about physical adapters
-        data = r_json.get('data').get('physicaladapters')
+        data = r.get('data').get('physicaladapters')
         #Iterate through each device and return only id for the fc ones
         hbas = [hba.get('id') for hba in data if hba.get('type') == 'fc']
 
@@ -96,19 +108,13 @@ class FreeStor:
         """
 
         URL = self._url('physicalresource/physicaladapter/%s/' % fca)
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-        r_json = r.json()
-
-        status_code = r_json.get('rc')
-        #If request is not successful it must through its return code
-        if status_code != 0:
-            exit(status_code)
+        r = self._get(URL)
 
         #Replaces - (hyphen) wwpn separator for : (column)
         fix_wwpn = lambda wwpn: wwpn.replace('-', ':')
 
         #Get information about physical adapters
-        data = r_json.get('data')
+        data = r.get('data')
         mode = data.get('mode')
         name = data.get('name')
         vendor = data.get('vendor')
@@ -172,19 +178,19 @@ class FreeStor:
     def get_initiator_fc_ports(self):
         """Retrieves the list of INITIATOR WWPNs of Fibre Channel target ports of all physical adapters"""
 
-        URL = self.url('physicalresource/physicaladapter/fcwwpn')
+        URL = self._url('physicalresource/physicaladapter/fcwwpn')
         mode = 'initiator'
         adapters = []
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-        data = r.json().get('data')
+        r = self._get(URL)
+        data = r.get('data')
         for fc in data:
             adapter = fc.get('adapter')
             wwpn = fc.get('wwpn')
 
             # Get fiber channel port status (link up / link down)
             URL = self._url('physicalresource/physicaladapter/%s/' % adapter)
-            r = requests.get(URL, cookies={'session_id': self.session_id})
-            portstatus = r.json()['data'].get('portstatus')
+            r = self._get(URL)
+            portstatus = r.get('data').get('portstatus')
 
             adapters.append(",".join([self.server, str(adapter), wwpn, mode, portstatus]))
 
@@ -196,16 +202,16 @@ class FreeStor:
         URL = self._url('physicalresource/physicaladapter/fctgtwwpn')
         mode = 'target'
         adapters = []
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-        data = r.json().get('data')
+        r = self._get(URL)
+        data = r.get('data')
         for fc in data:
             adapter = fc.get('adapter')
             wwpn = fc.get('aliaswwpn')
 
             # Get fiber channel port status (link up / link down)
-            URL = self._url('physicalresource/physicaladapter/{}/' % adapter)
-            r = requests.get(URL, cookies={'session_id': self.session_id})
-            portstatus = r.json()['data'].get('portstatus')
+            URL = self._url('physicalresource/physicaladapter/%s/' % adapter)
+            r = self._get(URL)
+            portstatus = r.get('data').get('portstatus')
 
             adapters.append(",".join([self.server, str(adapter), wwpn, mode, portstatus]))
 
@@ -215,23 +221,18 @@ class FreeStor:
         """Retrieve status information about all virtual devices and supporting devices."""
         
         URL = self._url('logicalresource/sanresource/')
-        r = requests.get(URL, cookies={'session_id': self.session_id}, headers=self.headers)
+        r = self._get(URL)
         
         # extract virtual device data out of the response
-        data = r.json()['data'].get('virtualdevices')
-
-        return data
+        return r.get('data').get('virtualdevices')
     
     def get_virtual_device_details(self, vdev):
         """Retrieves information about the specified virtualized device."""
 
         URL = self._url('logicalresource/sanresource/%s/' % vdev)
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data']
-
-        return data
+        return r.get('data')
 
     def get_vdevs(self):
         """Gather all virtual devices information"""
@@ -274,45 +275,33 @@ class FreeStor:
         """Get the list of source servers for incoming replication."""
 
         URL = self._url('logicalresource/replication/incoming/')
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data']
-
-        return data
+        return r.get('data')
 
     def get_outgoing_replication_servers(self):
         """Get the list of replica servers for outgoing replication."""
 
-        URL = self._url('logicalresource/replication/outgoing/' % self.server)
+        URL = self._url('logicalresource/replication/outgoing/')
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data']
-
-        return data
+        return r.get('data')
 
     def get_incoming_replication_status(self, vdev):
         """Returns incoming replication status for a replica device."""
 
         URL = self._url('logicalresource/replication/incoming/%s/' % vdev)
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data']
-
-        return data
+        return r. get('data')
 
     def get_replication_detail(self, vdev):
         """Returns replication information for a virtual device."""
 
         URL = self._url('logicalresource/replication/%s/' % vdev)
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data']
-
-        return data
+        return r.get('data')
 
     def get_replication_status(self):
         """Returns incoming replication status for a replica device"""
@@ -340,24 +329,18 @@ class FreeStor:
         """Get physical devices information"""
 
         URL = self._url('physicalresource/physicaldevice/')
-
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
+        r = self._get(URL)
         # extract physical device data out of the response
-        data = r.json()['data'].get('physicaldevices')
 
-        return data
+        return r.get('data').get('physicaldevices')
 
     def get_physical_device_detail(self, guid):
         """Get additional detail of the given physical device"""
 
         URL = self._url('physicalresource/physicaldevice/%s/' % guid)
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data']
-
-        return data
+        return r.get('data')
 
     def get_pdevs(self):
         """Gather all physical devices information"""
@@ -387,10 +370,9 @@ class FreeStor:
         """Get license information"""
 
         URL = self._url('server/license/')
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data'].get('licenseinfo')
+        data = r.get('data').get('licenseinfo')
 
         return data
 
@@ -398,12 +380,9 @@ class FreeStor:
         """Get additional license details"""
 
         URL = self._url('server/license/%s/' % key)
+        r = self._get(URL)
 
-        r = requests.get(URL, cookies={'session_id': self.session_id})
-
-        data = r.json()['data']
-
-        return data
+        return r.get('data')
 
     def get_licenses(self):
         """Gather all licenses information"""
@@ -442,9 +421,8 @@ class FreeStor:
             },
             "storagepoolid": pool_id
         })
-        r = requests.post(URL, cookies={'session_id': self.session_id}, data=data, headers=self.headers)
 
-        return r
+        return self._post(URL, data)
 
     def create_vdev_thick(self, name, size, qty=1, pool_id=1):
         """Create virtual devices in a storagepool already created (Thick provision)"""
@@ -458,9 +436,7 @@ class FreeStor:
             "storagepoolid": pool_id
         })
 
-        r = requests.post(URL, cookies={'session_id': self.session_id}, data=data, headers=self.headers)
-
-        return r
+        return self._post(URL, data)
 
     def create_fc_sanclient(self, name, os_type, initiators_wwpn):
         """Create fiber channel SAN client"""
@@ -478,10 +454,7 @@ class FreeStor:
             }
         })
 
-        r = requests.post(URL, cookies={'session_id': self.session_id}, data=data, headers=self.headers)
-        r_json = r.json()
-
-        status_code = r_json.get('rc')
+        r = self._post(URL, data)
 
         return r
 
